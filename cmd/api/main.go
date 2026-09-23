@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/karan-singh-bisht/Dealzo-api/internal/config"
+	"github.com/karan-singh-bisht/Dealzo-api/internal/handlers"
 )
 
 func main() {
@@ -20,12 +21,7 @@ func main() {
 	// HTTP headers must be set before WriteHeader or Write.
 	// If WriteHeader is not called explicitly, the first call to Write
 	// implicitly sends a 200 OK response.
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
-	})
+	mux.HandleFunc("GET /healthz", handlers.Health)
 
 	// We need to manually set the server because there are several timeouts which are by default 0 meaning
 	// the server waits for infinite time which should be only 30s or 60s see screenshot
