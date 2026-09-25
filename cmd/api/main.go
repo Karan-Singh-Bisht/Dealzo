@@ -1,17 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/karan-singh-bisht/Dealzo-api/internal/config"
+	"github.com/karan-singh-bisht/Dealzo-api/internal/db"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/handlers"
 )
 
 func main() {
 
 	cfg := config.MustLoad()
+	_, err := db.Connect(cfg.Database_url)
+	if err != nil {
+		log.Fatalf("DB Connection failed %v", err)
+	}
+
+	fmt.Println("DB Connection Established")
 
 	// ServeMux routes incoming HTTP requests to their handlers.
 	// Using an explicit mux makes the application's routing dependencies clear
