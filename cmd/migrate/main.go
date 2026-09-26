@@ -35,12 +35,13 @@ func main() {
 			log.Fatal(err)
 		}
 	case "down":
-		if err := m.Down(); err != nil {
+		//m.Down() is dangerous as it will migrate all the way down (applying all down migrations).
+		//Removing all data from production db
+		//To solve this we use steps
+		if err := m.Steps(-1); err != nil {
 			log.Fatal(err)
 		}
 	default:
 		log.Fatalf("Unknown command %s", os.Args[1])
 	}
-
-	fmt.Println("running migration")
 }

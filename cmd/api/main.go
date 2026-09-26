@@ -14,7 +14,8 @@ import (
 func main() {
 
 	cfg := config.MustLoad()
-	_, err := db.Connect(cfg.Database_url)
+
+	db, err := db.Connect(cfg.Database_url)
 	if err != nil {
 		log.Fatalf("DB Connection failed %v", err)
 	}
@@ -30,6 +31,7 @@ func main() {
 	// If WriteHeader is not called explicitly, the first call to Write
 	// implicitly sends a 200 OK response.
 	mux.HandleFunc("GET /healthz", handlers.Health)
+	mux.HandleFunc("GET /listings", handlers.Listings(db))
 
 	// We need to manually set the server because there are several timeouts which are by default 0 meaning
 	// the server waits for infinite time which should be only 30s or 60s see screenshot
