@@ -22,6 +22,8 @@ func main() {
 
 	fmt.Println("DB Connection Established")
 
+	lh := handlers.NewListingHandler(db)
+
 	// ServeMux routes incoming HTTP requests to their handlers.
 	// Using an explicit mux makes the application's routing dependencies clear
 	// and avoids relying on the package-level DefaultServeMux.
@@ -31,8 +33,9 @@ func main() {
 	// If WriteHeader is not called explicitly, the first call to Write
 	// implicitly sends a 200 OK response.
 	mux.HandleFunc("GET /healthz", handlers.Health)
-	mux.HandleFunc("GET /listings", handlers.Listings(db))
-	mux.HandleFunc("DELETE /listings/{id}", handlers.DeleteListing(db))
+	// mux.HandleFunc("GET /listings", handlers.Listings(db))
+	mux.HandleFunc("GET /listings", lh.Listings)
+	mux.HandleFunc("DELETE /listings/{id}", lh.DeleteListing)
 
 	// We need to manually set the server because there are several timeouts which are by default 0 meaning
 	// the server waits for infinite time which should be only 30s or 60s see screenshot
