@@ -34,7 +34,9 @@ func NewListingHandler(db *sql.DB) *ListingHandler {
 // this wrapping a function inside another function is the use case of closure
 // and this is dependency injection in go
 func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
-	rows, err := lh.db.Query(
+	//request scoped context
+	ctx := r.Context()
+	rows, err := lh.db.QueryContext(ctx,
 		`SELECT id,title,description,price,city,created_at 
 			FROM listings 
 			ORDER BY created_at DESC 
@@ -73,8 +75,9 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 // }
 
 func (lh ListingHandler) DeleteListing(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
-	_, err := lh.db.Exec(`DELETE FROM listings WHERE id = $1`, id)
+	_, err := lh.db.ExecContext(ctx, `DELETE FROM listings WHERE id = $1`, id)
 	if err != nil {
 		log.Printf("delete db.Exec Fail : %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
