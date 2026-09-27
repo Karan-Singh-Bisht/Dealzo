@@ -25,7 +25,7 @@ func Listings(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query(
-			`SELECT * 
+			`SELECT id,title,description,price,city,created_at 
 			FROM listings 
 			ORDER BY created_at DESC 
 			LIMIT 100`)
@@ -58,5 +58,19 @@ func Listings(db *sql.DB) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 
 		_ = json.NewEncoder(w).Encode(listings)
+	}
+}
+
+func DeleteListing(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		_, err := db.Exec(`DELETE FROM listings WHERE id = $1`, id)
+		if err != nil {
+			log.Printf("delete db.Exec Fail : %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
