@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/karan-singh-bisht/Dealzo-api/internal/config"
@@ -22,7 +24,13 @@ func main() {
 
 	fmt.Println("DB Connection Established")
 
-	lh := handlers.NewListingHandler(db)
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelInfo, //default is slog.LevelInfo
+	})
+	logger := slog.New(handler)
+
+	lh := handlers.NewListingHandler(db, logger)
 
 	// ServeMux routes incoming HTTP requests to their handlers.
 	// Using an explicit mux makes the application's routing dependencies clear

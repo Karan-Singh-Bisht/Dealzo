@@ -3,7 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -17,22 +17,25 @@ type listing struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 type ListingHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *slog.Logger
 }
 
 //Constructor pattern
 
-func NewListingHandler(db *sql.DB) *ListingHandler {
+func NewListingHandler(db *sql.DB, logger *slog.Logger) *ListingHandler {
 	return &ListingHandler{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
-
-// func Listings(db *sql.DB) http.HandlerFunc {
 
 // Closure Factory - technical term
 // this wrapping a function inside another function is the use case of closure
 // and this is dependency injection in go
+
+// func Listings(db *sql.DB) http.HandlerFunc {
+
 func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 	//request scoped context
 	ctx := r.Context()
@@ -42,7 +45,7 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 			ORDER BY created_at DESC 
 			LIMIT 100`)
 	if err != nil {
-		log.Printf("query: %v", err)
+		lh.logger.Error("db.QueryContext", "err", err)
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
@@ -53,7 +56,7 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var l listing
 		if err := rows.Scan(&l.ID, &l.Title, &l.Description, &l.Price, &l.City, &l.CreatedAt); err != nil {
-			log.Printf("rows.scan : %v", err)
+			lh.logger.Error("rows.scan:", "err", err)
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
@@ -61,7 +64,7 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("rows.err: %v", err)
+		lh.logger.Error("rows.err: ", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -77,9 +80,11 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 func (lh ListingHandler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
-	_, err := lh.db.ExecContext(ctx, `DELETE FROM listings WHERE id = $1`, id)
+
+	_, err := lh.db.ExecContext(ctx, `DELETE FROM listing WHERE id = $1`, id)
 	if err != nil {
-		log.Printf("delete db.Exec Fail : %v", err)
+		// log.Printf("delete db.Exec Fail : %v", err)
+		lh.logger.Error("delete failed", "listing_id", id, "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
