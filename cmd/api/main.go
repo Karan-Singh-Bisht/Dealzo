@@ -11,6 +11,7 @@ import (
 	"github.com/karan-singh-bisht/Dealzo-api/internal/config"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/db"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/handlers"
+	"github.com/karan-singh-bisht/Dealzo-api/internal/middleware"
 )
 
 func main() {
@@ -24,11 +25,11 @@ func main() {
 
 	fmt.Println("DB Connection Established")
 
-	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	logHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 		Level:     slog.LevelInfo, //default is slog.LevelInfo
 	})
-	logger := slog.New(handler)
+	logger := slog.New(logHandler)
 
 	lh := handlers.NewListingHandler(db, logger)
 
@@ -48,9 +49,12 @@ func main() {
 	// We need to manually set the server because there are several timeouts which are by default 0 meaning
 	// the server waits for infinite time which should be only 30s or 60s see screenshot
 
-	srv := &http.Server{
+	//middleware
+	handler := middleware.RequestId(mux)
+
+	srv := http.Server{
 		Addr:         ":" + cfg.Port,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  time.Second * 10, //default is 0
 		WriteTimeout: time.Second * 30, //default is 0
 		IdleTimeout:  time.Second * 60, //default is 0

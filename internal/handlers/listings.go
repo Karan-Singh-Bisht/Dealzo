@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/karan-singh-bisht/Dealzo-api/internal/middleware"
 )
 
 type listing struct {
@@ -79,12 +81,14 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 
 func (lh ListingHandler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	requestId := middleware.RequestIdFromContext(ctx)
+	// requestId := ctx.Value(requestIdKey) //returned value from middleware
 	id := r.PathValue("id")
 
 	_, err := lh.db.ExecContext(ctx, `DELETE FROM listing WHERE id = $1`, id)
 	if err != nil {
 		// log.Printf("delete db.Exec Fail : %v", err)
-		lh.logger.Error("delete failed", "listing_id", id, "err", err)
+		lh.logger.Error("delete failed", "listing_id", id, "requestId", requestId, "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
