@@ -19,6 +19,7 @@ type listing struct {
 	City        string    `json:"city"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
 type ListingHandler struct {
 	db     *sql.DB
 	logger *slog.Logger
@@ -102,7 +103,7 @@ func (lh ListingHandler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId := middleware.RequestIdFromContext(ctx) //returned value from middleware
 
-	var req listing
+	var req CreateListingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		lh.logger.Error("Decoding failed", "request_id", requestId, "err", err)
 		httpx.Error(w, http.StatusBadRequest, "Failed to decode", httpx.CodeInvalidID)
@@ -112,23 +113,24 @@ func (lh ListingHandler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	row := lh.db.QueryRowContext(ctx,
 		`INSERT INTO listings 
 		(title,description,price,city)
-		VALUES ($1,$2,$3,$4) RETURNING id
+		VALUES ($1,$2,$3,$4) RETURNING id, title, created_at 
 	`,
 		req.Title, req.Description, req.Price, req.City,
 	)
 
-	var id string
+	var out CreateListingResponse
 
-	if err := row.Scan(&id); err != nil {
+	if err := row.Scan(&out.ID, &out.Title, &out.CreatedAt); err != nil {
 		lh.logger.Error("Row Scan Failed", "request_id", requestId, "err", err)
 		httpx.Error(w, http.StatusInternalServerError, "Something went wrong", httpx.CodeInternalError)
 		return
 	}
 
-	lh.logger.Info("listing created", "request_id", requestId, "listing_id", id)
+	lh.logger.Info("listing created", "request_id", requestId, "listing_id", out.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	_ = json.NewEncoder(w).Encode(map[string]string{"id": id})
+	// _ = json.NewEncoder(w).Encode(map[string]string{"id": id})
+	_ = json.NewEncoder(w).Encode(out)
 }
