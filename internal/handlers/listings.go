@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -106,7 +107,17 @@ func (lh ListingHandler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	var req CreateListingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		lh.logger.Error("Decoding failed", "request_id", requestId, "err", err)
-		httpx.Error(w, http.StatusBadRequest, "Failed to decode", httpx.CodeInvalidID)
+		httpx.Error(w, http.StatusBadRequest, "Failed to decode", httpx.CodeMalformedJSON)
+		return
+	}
+
+	//400 -> cannot parse the data
+	//422 -> data is parsed but validation failed
+
+	if err := req.Validate(); err != nil {
+		var verr *ValidationError
+		errors.As(err, &verr)
+		httpx.ValidationError(w, http.StatusUnprocessableEntity, err.Error(), httpx.CodeValidationFailed, verr.Field)
 		return
 	}
 
