@@ -34,7 +34,7 @@ func (req CreateListingRequest) Validate() error {
 	if strings.TrimSpace(req.Title) == "" {
 		return &ValidationError{Field: "title", Msg: "field is required"}
 	}
-	if req.Price == 0 {
+	if req.Price <= 0 {
 		return &ValidationError{Field: "price", Msg: "price should be greater than 0"}
 	}
 	if strings.TrimSpace(req.City) == "" {
