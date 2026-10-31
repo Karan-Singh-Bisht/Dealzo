@@ -32,6 +32,7 @@ func main() {
 	logger := slog.New(logHandler)
 
 	lh := handlers.NewListingHandler(db, logger)
+	ah := handlers.NewAuthHandler(db, logger)
 
 	// ServeMux routes incoming HTTP requests to their handlers.
 	// Using an explicit mux makes the application's routing dependencies clear
@@ -46,6 +47,7 @@ func main() {
 	mux.HandleFunc("GET /listings", lh.Listings)
 	mux.HandleFunc("DELETE /listings/{id}", lh.DeleteListing)
 	mux.HandleFunc("POST /listings", lh.CreateListing)
+	mux.HandleFunc("POST /signup", ah.Signup)
 
 	// We need to manually set the server because there are several timeouts which are by default 0 meaning
 	// the server waits for infinite time which should be only 30s or 60s see screenshot
