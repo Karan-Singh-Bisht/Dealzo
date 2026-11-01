@@ -12,6 +12,7 @@ type Config struct {
 	Port         string
 	Env          string
 	Database_url string
+	JWT_token    string
 }
 
 // Follows Fail Fast Pattern
@@ -33,9 +34,15 @@ func MustLoad() Config {
 		panic("DATABASE_URL is required")
 	}
 
+	jwt_token := os.Getenv("JWT_TOKEN")
+	if jwt_token == "" {
+		panic("JWT_TOKEN is required")
+	}
+
 	return Config{
 		Port:         port,
 		Env:          env,
 		Database_url: database_url,
+		JWT_token:    jwt_token,
 	}
 }
