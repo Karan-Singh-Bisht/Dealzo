@@ -10,12 +10,6 @@ import (
 //Creating this middleware to send a request id to each request user sends which can help
 //Support team
 
-type ctxKey int
-
-const (
-	requestIDKey ctxKey = iota
-)
-
 const (
 	requestId = "X-Request-ID"
 )

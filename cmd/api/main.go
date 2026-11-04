@@ -34,6 +34,7 @@ func main() {
 	lh := handlers.NewListingHandler(db, logger)
 	ah := handlers.NewAuthHandler(db, logger, cfg)
 
+	requireAuth := middleware.RequireAuth(logger, cfg.JWT_token)
 	// ServeMux routes incoming HTTP requests to their handlers.
 	// Using an explicit mux makes the application's routing dependencies clear
 	// and avoids relying on the package-level DefaultServeMux.
@@ -45,7 +46,7 @@ func main() {
 	mux.HandleFunc("GET /healthz", handlers.Health)
 	// mux.HandleFunc("GET /listings", handlers.Listings(db))
 	mux.HandleFunc("GET /listings", lh.Listings)
-	mux.HandleFunc("DELETE /listings/{id}", lh.DeleteListing)
+	mux.Handle("DELETE /listings/{id}", requireAuth(http.HandlerFunc(lh.DeleteListing)))
 	mux.HandleFunc("POST /listings", lh.CreateListing)
 	mux.HandleFunc("POST /signup", ah.Signup)
 	mux.HandleFunc("POST /signin", ah.Signin)
