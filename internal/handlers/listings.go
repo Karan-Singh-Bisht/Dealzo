@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+	"uuid"
 
 	"github.com/karan-singh-bisht/Dealzo-api/internal/httpx"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/middleware"
@@ -18,6 +19,7 @@ type listing struct {
 	Description string    `json:"description"`
 	Price       int64     `json:"price"`
 	City        string    `json:"city"`
+	UserID      uuid.UUID `json:"user_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -85,9 +87,15 @@ func (lh ListingHandler) Listings(w http.ResponseWriter, r *http.Request) {
 func (lh ListingHandler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId := middleware.RequestIdFromContext(ctx) //returned value from middleware
+	userId, err := middleware.UserIdFromContext(ctx)
+	if err != nil {
+		lh.logger.Error("No user id found in context", "request_id", requestId, "err", err)
+		httpx.Error(w, http.StatusInternalServerError, "something went wrong", httpx.CodeInternalError)
+		return
+	}
 	id := r.PathValue("id")
 
-	_, err := lh.db.ExecContext(ctx, `DELETE FROM listings WHERE id = $1`, id)
+	_, err = lh.db.ExecContext(ctx, `DELETE FROM listings WHERE id = $1 AND user_id = $2`, id, userId)
 	if err != nil {
 		// log.Printf("delete db.Exec Fail : %v", err)
 		lh.logger.Error("delete failed", "listing_id", id, "requestId", requestId, "err", err)
@@ -103,6 +111,13 @@ func (lh ListingHandler) CreateListing(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	requestId := middleware.RequestIdFromContext(ctx) //returned value from middleware
+	userId, err := middleware.UserIdFromContext(ctx)
+
+	if err != nil {
+		lh.logger.Error("No user id found in context", "request_id", requestId, "err", err)
+		httpx.Error(w, http.StatusInternalServerError, "something went wrong", httpx.CodeInternalError)
+		return
+	}
 
 	var req CreateListingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -123,10 +138,10 @@ func (lh ListingHandler) CreateListing(w http.ResponseWriter, r *http.Request) {
 
 	row := lh.db.QueryRowContext(ctx,
 		`INSERT INTO listings 
-		(title,description,price,city)
-		VALUES ($1,$2,$3,$4) RETURNING id, title, created_at 
+		(title,description,price,city, user_id)
+		VALUES ($1,$2,$3,$4,$5) RETURNING id, title, created_at 
 	`,
-		req.Title, req.Description, req.Price, req.City,
+		req.Title, req.Description, req.Price, req.City, userId,
 	)
 
 	var out CreateListingResponse

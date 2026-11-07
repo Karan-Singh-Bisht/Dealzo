@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"uuid"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/httpx"
@@ -56,9 +57,24 @@ func RequireAuth(logger *slog.Logger, secret string) func(next http.Handler) htt
 				return
 			}
 
-			ctxWithUserID := context.WithValue(ctx, userIDKey, claims.Subject)
+			userId, err := uuid.Parse(claims.Subject)
+			if err != nil {
+				logger.Info("string to uuid failed", "err", err)
+				httpx.Error(w, http.StatusInternalServerError, "something went wrong", httpx.CodeInternalError)
+				return
+			}
+
+			ctxWithUserID := context.WithValue(ctx, userIDKey, userId)
 
 			next.ServeHTTP(w, r.WithContext(ctxWithUserID))
 		})
 	}
+}
+
+func UserIdFromContext(ctx context.Context) (uuid.UUID, error) {
+	id, ok := ctx.Value(userIDKey).(uuid.UUID)
+	if !ok {
+		return id, errors.New("no user id found in context")
+	}
+	return id, nil
 }

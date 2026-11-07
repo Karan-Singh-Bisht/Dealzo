@@ -47,7 +47,7 @@ func main() {
 	// mux.HandleFunc("GET /listings", handlers.Listings(db))
 	mux.HandleFunc("GET /listings", lh.Listings)
 	mux.Handle("DELETE /listings/{id}", requireAuth(http.HandlerFunc(lh.DeleteListing)))
-	mux.HandleFunc("POST /listings", lh.CreateListing)
+	mux.Handle("POST /listings", requireAuth(http.HandlerFunc(lh.CreateListing)))
 	mux.HandleFunc("POST /signup", ah.Signup)
 	mux.HandleFunc("POST /signin", ah.Signin)
 
