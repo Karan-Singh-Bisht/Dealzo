@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"github.com/karan-singh-bisht/Dealzo-api/internal/db"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/handlers"
 	"github.com/karan-singh-bisht/Dealzo-api/internal/middleware"
+	"github.com/karan-singh-bisht/Dealzo-api/internal/storage"
 )
 
 func main() {
@@ -30,9 +32,23 @@ func main() {
 		Level:     slog.LevelInfo, //default is slog.LevelInfo
 	})
 	logger := slog.New(logHandler)
+	slog.SetDefault(logger)
+
+	//storage initialization
+	store, err := storage.NewR2(context.TODO(), storage.R2Config{
+		AccountID:    cfg.StorageAccountID,
+		AccessKey:    cfg.StorageAccessKey,
+		AccessSecret: cfg.StorageAccessSecret,
+		Bucket:       cfg.StorageBucket,
+	})
+
+	if err != nil {
+		log.Fatalf("main.storage.r2", err)
+	}
 
 	lh := handlers.NewListingHandler(db, logger)
 	ah := handlers.NewAuthHandler(db, logger, cfg)
+	uh := handlers.NewUploadHandler(logger, store)
 
 	requireAuth := middleware.RequireAuth(logger, cfg.JWT_token)
 	// ServeMux routes incoming HTTP requests to their handlers.
@@ -50,6 +66,8 @@ func main() {
 	mux.Handle("POST /listings", requireAuth(http.HandlerFunc(lh.CreateListing)))
 	mux.HandleFunc("POST /signup", ah.Signup)
 	mux.HandleFunc("POST /signin", ah.Signin)
+	mux.Handle("POST /me", requireAuth(http.HandlerFunc(ah.UserInfo)))
+	mux.Handle("POST /uploads/presign", requireAuth(http.HandlerFunc(uh.Presign)))
 
 	// We need to manually set the server because there are several timeouts which are by default 0 meaning
 	// the server waits for infinite time which should be only 30s or 60s see screenshot

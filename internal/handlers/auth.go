@@ -170,3 +170,29 @@ func (ah AuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewEncoder(w).Encode(out)
 }
+
+func (ah AuthHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	request_id := middleware.RequestIdFromContext(ctx)
+	ah.logger.With("request_id", request_id)
+	userId, err := middleware.UserIdFromContext(ctx)
+
+	if err != nil {
+		ah.logger.Error("No user id with request", "err", err)
+		httpx.Error(w, http.StatusBadRequest, "Bad Request", httpx.CodeUnauthenticated)
+		return
+	}
+
+	var out UserInfoResponse
+	row := ah.db.QueryRowContext(ctx, "SELECT name,email from users WHERE id = $1", userId)
+	if err := row.Scan(&out.Name, &out.Email); err != nil {
+		ah.logger.Error("Scan failed", "err", err)
+		httpx.Error(w, http.StatusInternalServerError, "Something went wrong", httpx.CodeInternalError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(out)
+}

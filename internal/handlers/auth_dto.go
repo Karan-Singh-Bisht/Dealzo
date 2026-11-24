@@ -27,6 +27,11 @@ type SigninResponse struct {
 	ExpiresIn int    `json:"expires_in"`
 }
 
+type UserInfoResponse struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
 func (req CreateUserRequest) AuthValidate() error {
 	if strings.TrimSpace(req.Name) == "" {
 		return &ValidationError{Field: "username", Msg: "Username is required"}
